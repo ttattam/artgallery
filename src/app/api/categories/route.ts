@@ -2,61 +2,62 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Category from '@/models/Category';
 
-// Временное хранилище категорий
-let categories = [
-  { 
-    _id: '1', 
-    name: 'Граффити и муралы', 
-    slug: 'graffiti-murals',
-    description: 'Оформление стен, фасадов зданий и других поверхностей'
+const defaultCategories = [
+  {
+    name: 'Живопись',
+    description: 'Картины, написанные маслом, акрилом и другими красками'
   },
-  { 
-    _id: '2', 
-    name: 'Диджитал-арт', 
-    slug: 'digital-art',
-    description: 'Цифровые иллюстрации, NFT, концепт-арт'
+  {
+    name: 'Графика',
+    description: 'Рисунки карандашом, тушью, пастелью'
   },
-  { 
-    _id: '3', 
-    name: 'Брендинг и айдентика', 
-    slug: 'branding',
-    description: 'Логотипы, фирменный стиль, визуальные коммуникации'
+  {
+    name: 'Скульптура',
+    description: 'Трехмерные произведения искусства'
   },
-  { 
-    _id: '4', 
-    name: 'Оформление интерьеров', 
-    slug: 'interior-design',
-    description: 'Роспись стен, декоративные элементы, инсталляции'
+  {
+    name: 'Фотография',
+    description: 'Художественная и документальная фотография'
   },
-  { 
-    _id: '5', 
-    name: 'Ивент-дизайн', 
-    slug: 'event-design',
-    description: 'Оформление мероприятий, выставок, презентаций'
+  {
+    name: 'Цифровое искусство',
+    description: 'Произведения, созданные с помощью компьютерных технологий'
   },
-  { 
-    _id: '6', 
-    name: 'Иллюстрация', 
-    slug: 'illustration',
-    description: 'Книжная иллюстрация, рекламная графика, принты'
+  {
+    name: 'Инсталляция',
+    description: 'Пространственные композиции из различных материалов'
   },
-  { 
-    _id: '7', 
-    name: 'Традиционное искусство', 
-    slug: 'traditional-art',
-    description: 'Живопись, графика, скульптура'
+  {
+    name: 'Акварель',
+    description: 'Картины, написанные акварельными красками'
   },
-  { 
-    _id: '8', 
-    name: 'Стрит-арт', 
-    slug: 'street-art',
-    description: 'Уличное искусство, инсталляции в городской среде'
+  {
+    name: 'Портрет',
+    description: 'Изображения людей в различных техниках'
   },
-  { 
-    _id: '9', 
-    name: 'Коммерческие проекты', 
-    slug: 'commercial',
-    description: 'Оформление торговых пространств, витрин, вывесок'
+  {
+    name: 'Пейзаж',
+    description: 'Изображения природы и городских видов'
+  },
+  {
+    name: 'Абстракция',
+    description: 'Беспредметное искусство, основанное на цвете и форме'
+  },
+  {
+    name: 'Граффити - Оформление фасадов',
+    description: 'Художественное оформление внешних стен зданий и сооружений'
+  },
+  {
+    name: 'Граффити - Интерьерный дизайн',
+    description: 'Художественное оформление внутренних помещений в стиле граффити'
+  },
+  {
+    name: 'Стикеры Telegram',
+    description: 'Разработка наборов стикеров для мессенджера Telegram'
+  },
+  {
+    name: 'Брендинг',
+    description: 'Разработка логотипов, фирменного стиля и брендбуков'
   }
 ];
 
@@ -64,8 +65,18 @@ let categories = [
 export async function GET() {
   try {
     await connectToDatabase();
-    const categories = await Category.find().sort({ name: 1 });
-    return NextResponse.json(categories);
+    
+    // Проверяем, есть ли категории в базе
+    const existingCategories = await Category.find();
+    
+    // Если категорий нет, создаем базовые
+    if (existingCategories.length === 0) {
+      await Category.insertMany(defaultCategories);
+      return NextResponse.json(await Category.find().sort({ name: 1 }));
+    }
+    
+    // Возвращаем существующие категории
+    return NextResponse.json(existingCategories.sort((a, b) => a.name.localeCompare(b.name)));
   } catch (error) {
     console.error('Ошибка при получении категорий:', error);
     return NextResponse.json(

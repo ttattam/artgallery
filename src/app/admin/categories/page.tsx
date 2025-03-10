@@ -22,10 +22,7 @@ export default function AdminCategoriesPage() {
     try {
       setIsLoading(true);
       
-      // Сначала пытаемся инициализировать категории
-      await fetch('/api/init');
-      
-      // Затем загружаем список категорий
+      // Загружаем список категорий (инициализация происходит автоматически)
       const response = await fetch('/api/categories');
       
       if (!response.ok) {
