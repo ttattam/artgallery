@@ -65,6 +65,9 @@ const Footer = () => {
           <p className="text-sm text-muted-foreground">
             &copy; {currentYear} Art Gallery. Все права защищены.
           </p>
+          <Link href="/admin/login" className="mt-2 inline-block text-sm text-muted-foreground hover:text-foreground">
+            Вход для администратора
+          </Link>
         </div>
       </div>
     </footer>

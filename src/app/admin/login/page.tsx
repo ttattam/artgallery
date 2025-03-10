@@ -26,25 +26,17 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      // В реальном проекте здесь будет отправка данных на сервер для аутентификации
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData),
-      // });
+      // Проверка тестовых учетных данных
+      if (formData.email === 'admin@example.com') {
+        // Имитация задержки аутентификации
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        
+        // Прямое перенаправление через window.location
+        window.location.href = '/admin/dashboard';
+        return;
+      }
       
-      // Имитация задержки аутентификации
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // Имитация успешной аутентификации
-      // В реальном проекте здесь будет проверка ответа от сервера
-      // if (!response.ok) {
-      //   const data = await response.json();
-      //   throw new Error(data.error || 'Ошибка аутентификации');
-      // }
-      
-      // Перенаправление на панель управления
-      router.push('/admin/dashboard');
+      throw new Error('Неверный email или пароль');
     } catch (err: any) {
       console.error('Ошибка при входе:', err);
       setError(err.message || 'Неверный email или пароль');
@@ -72,7 +64,12 @@ export default function AdminLoginPage() {
           </div>
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form 
+          onSubmit={handleSubmit} 
+          method="POST"
+          className="space-y-4"
+          action="#"
+        >
           <div>
             <label htmlFor="email" className="mb-2 block text-sm font-medium">
               Email

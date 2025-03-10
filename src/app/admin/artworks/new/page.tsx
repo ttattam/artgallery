@@ -3,28 +3,42 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FiArrowLeft, FiUpload, FiX } from 'react-icons/fi';
+import { FiArrowLeft, FiUpload, FiX, FiCheck } from 'react-icons/fi';
 
 interface Category {
   _id: string;
   name: string;
+  description?: string;
+}
+
+interface FormData {
+  title: string;
+  description: string;
+  imageUrl: string;
+  categories: string[];
+  year: number;
+  technique: string;
+  dimensions: string;
+  price: string;
+  isSold: boolean;
+  isFeatured: boolean;
 }
 
 export default function NewArtworkPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | undefined>(undefined);
   
   // Состояние для предварительного просмотра изображения
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   
   // Состояние формы
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
     imageUrl: '',
-    categories: [] as string[],
+    categories: [],
     year: new Date().getFullYear(),
     technique: '',
     dimensions: '',
@@ -37,21 +51,13 @@ export default function NewArtworkPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        // В реальном проекте здесь будет запрос к API
-        // const response = await fetch('/api/categories');
-        
-        // Имитация данных категорий
-        const mockCategories = [
-          { _id: '1', name: 'Живопись' },
-          { _id: '2', name: 'Акварель' },
-          { _id: '3', name: 'Портрет' },
-          { _id: '4', name: 'Пейзаж' },
-          { _id: '5', name: 'Абстракция' },
-        ];
-        
-        setCategories(mockCategories);
+        const response = await fetch('/api/categories');
+        if (!response.ok) throw new Error('Ошибка при загрузке категорий');
+        const data = await response.json();
+        setCategories(data);
       } catch (err) {
         console.error('Ошибка при загрузке категорий:', err);
+        setError('Не удалось загрузить категории');
       }
     };
 
@@ -80,39 +86,55 @@ export default function NewArtworkPage() {
     }
   };
 
-  // Обработчик изменения категорий (множественный выбор)
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const options = e.target.options;
-    const selectedCategories: string[] = [];
-    
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].selected) {
-        selectedCategories.push(options[i].value);
-      }
-    }
-    
-    setFormData((prev) => ({ ...prev, categories: selectedCategories }));
+  // Обработчик изменения категорий
+  const handleCategoryChange = (categoryId: string) => {
+    setFormData((prev: FormData) => ({
+      ...prev,
+      categories: prev.categories.includes(categoryId)
+        ? prev.categories.filter(id => id !== categoryId)
+        : [...prev.categories, categoryId]
+    }));
+  };
+
+  // Получение выбранных категорий
+  const getSelectedCategories = () => {
+    return categories.filter(cat => formData.categories.includes(cat._id));
   };
 
   // Обработчик загрузки изображения
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     
     if (file) {
-      // Создаем URL для предварительного просмотра
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
-      
-      // В реальном проекте здесь будет загрузка изображения на сервер
-      // и получение URL для сохранения в базе данных
-      // Для демонстрации просто используем URL предварительного просмотра
-      setFormData((prev) => ({ ...prev, imageUrl: previewUrl }));
+      try {
+        const previewUrl = URL.createObjectURL(file);
+        setImagePreview(previewUrl);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Ошибка при загрузке изображения');
+        }
+
+        const data = await response.json();
+        setFormData((prev) => ({ ...prev, imageUrl: data.url }));
+      } catch (err) {
+        console.error('Ошибка при загрузке изображения:', err);
+        setError('Ошибка при загрузке изображения');
+        setImagePreview(undefined);
+      }
     }
   };
 
   // Удаление предварительного просмотра изображения
   const handleRemoveImage = () => {
-    setImagePreview(null);
+    setImagePreview(undefined);
     setFormData((prev) => ({ ...prev, imageUrl: '' }));
   };
 
@@ -120,26 +142,20 @@ export default function NewArtworkPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null);
+    setError(undefined);
 
     try {
-      // Проверка обязательных полей
-      if (!formData.title || !formData.description || !formData.imageUrl || formData.categories.length === 0 || !formData.technique || !formData.dimensions) {
-        throw new Error('Пожалуйста, заполните все обязательные поля');
+      // Отправляем данные на сервер
+      const response = await fetch('/api/artworks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Произошла ошибка при создании произведения');
       }
-      
-      // В реальном проекте здесь будет отправка данных на сервер
-      // const response = await fetch('/api/artworks', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData),
-      // });
-      
-      // Имитация задержки отправки
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // Имитация успешного создания
-      // В реальном проекте здесь будет проверка ответа от сервера
       
       // Перенаправление на страницу со списком произведений
       router.push('/admin/artworks');
@@ -177,7 +193,7 @@ export default function NewArtworkPage() {
           <div className="space-y-6">
             <div>
               <label htmlFor="title" className="mb-2 block text-sm font-medium">
-                Название <span className="text-red-500">*</span>
+                Название
               </label>
               <input
                 type="text"
@@ -193,7 +209,7 @@ export default function NewArtworkPage() {
             
             <div>
               <label htmlFor="description" className="mb-2 block text-sm font-medium">
-                Описание <span className="text-red-500">*</span>
+                Описание
               </label>
               <textarea
                 id="description"
@@ -203,33 +219,64 @@ export default function NewArtworkPage() {
                 rows={5}
                 className="input w-full"
                 placeholder="Введите описание произведения"
-                required
               ></textarea>
             </div>
             
             <div>
-              <label htmlFor="categories" className="mb-2 block text-sm font-medium">
-                Категории <span className="text-red-500">*</span>
+              <label className="mb-2 block text-sm font-medium">
+                Категории
               </label>
-              <select
-                id="categories"
-                name="categories"
-                value={formData.categories}
-                onChange={handleCategoryChange}
-                className="input w-full"
-                multiple
-                size={5}
-                required
-              >
+              
+              {/* Отображение выбранных категорий */}
+              {getSelectedCategories().length > 0 && (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {getSelectedCategories().map(category => (
+                    <span
+                      key={category._id}
+                      className="inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-sm"
+                    >
+                      {category.name}
+                      <button
+                        type="button"
+                        onClick={() => handleCategoryChange(category._id)}
+                        className="ml-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <FiX size={14} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Список всех категорий */}
+              <div className="space-y-2">
                 {categories.map((category) => (
-                  <option key={category._id} value={category._id}>
-                    {category.name}
-                  </option>
+                  <label
+                    key={category._id}
+                    className="flex items-center rounded-lg border border-border p-3 hover:bg-accent/5"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mr-3 h-4 w-4 rounded border-border"
+                      checked={formData.categories.includes(category._id)}
+                      onChange={() => handleCategoryChange(category._id)}
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium">{category.name}</div>
+                      {category.description && (
+                        <div className="text-sm text-muted-foreground">
+                          {category.description}
+                        </div>
+                      )}
+                    </div>
+                  </label>
                 ))}
-              </select>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Удерживайте Ctrl (Cmd на Mac) для выбора нескольких категорий
-              </p>
+                {categories.length === 0 && (
+                  <div className="rounded-lg border border-border p-4 text-center text-muted-foreground">
+                    Нет доступных категорий
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
@@ -237,7 +284,7 @@ export default function NewArtworkPage() {
           <div className="space-y-6">
             <div>
               <label htmlFor="image" className="mb-2 block text-sm font-medium">
-                Изображение <span className="text-red-500">*</span>
+                Изображение
               </label>
               {imagePreview ? (
                 <div className="relative mb-4 aspect-square w-full overflow-hidden rounded-lg border border-border">
@@ -287,7 +334,7 @@ export default function NewArtworkPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="year" className="mb-2 block text-sm font-medium">
-                  Год создания <span className="text-red-500">*</span>
+                  Год создания
                 </label>
                 <input
                   type="number"
@@ -298,13 +345,12 @@ export default function NewArtworkPage() {
                   className="input w-full"
                   min="1900"
                   max={new Date().getFullYear()}
-                  required
                 />
               </div>
               
               <div>
                 <label htmlFor="technique" className="mb-2 block text-sm font-medium">
-                  Техника <span className="text-red-500">*</span>
+                  Техника
                 </label>
                 <input
                   type="text"
@@ -314,7 +360,6 @@ export default function NewArtworkPage() {
                   onChange={handleChange}
                   className="input w-full"
                   placeholder="Масло, холст"
-                  required
                 />
               </div>
             </div>
@@ -322,7 +367,7 @@ export default function NewArtworkPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="dimensions" className="mb-2 block text-sm font-medium">
-                  Размеры <span className="text-red-500">*</span>
+                  Размеры
                 </label>
                 <input
                   type="text"
@@ -332,7 +377,6 @@ export default function NewArtworkPage() {
                   onChange={handleChange}
                   className="input w-full"
                   placeholder="100x80 см"
-                  required
                 />
               </div>
               

@@ -1,33 +1,23 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FiArrowRight } from "react-icons/fi";
+import { connectToDatabase } from '@/lib/mongodb';
+import Artwork from '@/models/Artwork';
 
-// Временные данные для демонстрации
-const featuredArtworks = [
-  {
-    id: 1,
-    title: "Абстрактная композиция №1",
-    image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    category: "Живопись",
-    year: 2023,
-  },
-  {
-    id: 2,
-    title: "Городской пейзаж",
-    image: "https://images.unsplash.com/photo-1549887534-1541e9326642?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    category: "Акварель",
-    year: 2022,
-  },
-  {
-    id: 3,
-    title: "Портрет незнакомки",
-    image: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    category: "Портрет",
-    year: 2023,
-  },
-];
+async function getFeaturedArtworks() {
+  try {
+    await connectToDatabase();
+    const artworks = await Artwork.find({ isFeatured: true }).limit(3).sort({ createdAt: -1 });
+    return JSON.parse(JSON.stringify(artworks));
+  } catch (error) {
+    console.error('Ошибка при получении избранных работ:', error);
+    return [];
+  }
+}
 
-export default function Home() {
+export default async function Home() {
+  const featuredArtworks = await getFeaturedArtworks();
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -41,10 +31,10 @@ export default function Home() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/50 to-background/90" />
         <div className="container relative z-10 flex h-full flex-col items-center justify-center text-center">
-          <h1 className="mb-6 max-w-4xl text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
+          <h1 className="mb-6 max-w-4xl text-4xl font-bold tracking-tight text-black sm:text-5xl md:text-6xl">
             Уникальные произведения современного искусства
           </h1>
-          <p className="mb-8 max-w-2xl text-lg text-white/90">
+          <p className="mb-8 max-w-2xl text-lg text-black">
             Откройте для себя коллекцию работ талантливого художника, отражающих глубину эмоций и красоту окружающего мира
           </p>
           <div className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
@@ -68,11 +58,17 @@ export default function Home() {
             </Link>
           </div>
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredArtworks.map((artwork) => (
-              <Link key={artwork.id} href={`/artworks/${artwork.id}`} className="group overflow-hidden rounded-lg border border-border bg-background transition-all hover:shadow-md">
+            {featuredArtworks.map((artwork: {
+              _id: string;
+              title: string;
+              imageUrl: string;
+              technique: string;
+              year: number;
+            }) => (
+              <Link key={artwork._id} href={`/artworks/${artwork._id}`} className="group overflow-hidden rounded-lg border border-border bg-background transition-all hover:shadow-md">
                 <div className="relative aspect-square overflow-hidden">
                   <Image
-                    src={artwork.image}
+                    src={artwork.imageUrl}
                     alt={artwork.title}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -81,12 +77,17 @@ export default function Home() {
                 <div className="p-4">
                   <h3 className="mb-1 text-xl font-medium">{artwork.title}</h3>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{artwork.category}</span>
+                    <span className="text-sm text-muted-foreground">{artwork.technique}</span>
                     <span className="text-sm text-muted-foreground">{artwork.year}</span>
                   </div>
                 </div>
               </Link>
             ))}
+            {featuredArtworks.length === 0 && (
+              <div className="col-span-3 text-center text-muted-foreground py-12">
+                Пока нет избранных работ
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -130,8 +131,8 @@ export default function Home() {
                 href={`/categories/${category.toLowerCase()}`}
                 className="group flex flex-col items-center rounded-lg border border-border bg-background p-6 text-center transition-all hover:shadow-md"
               >
-                <h3 className="mb-2 text-xl font-medium">{category}</h3>
-                <p className="text-sm text-muted-foreground">Исследуйте коллекцию</p>
+                <h3 className="mb-2 text-xl font-medium text-gray-800">{category}</h3>
+                <p className="text-sm text-gray-700">Исследуйте коллекцию</p>
               </Link>
             ))}
           </div>
@@ -141,11 +142,11 @@ export default function Home() {
       {/* Contact CTA */}
       <section className="section bg-accent text-white">
         <div className="container text-center">
-          <h2 className="mb-6 text-3xl font-bold tracking-tight">Заинтересованы в приобретении?</h2>
-          <p className="mb-8 mx-auto max-w-2xl text-white/90">
+          <h2 className="mb-6 text-3xl font-bold tracking-tight text-gray-800">Заинтересованы в приобретении?</h2>
+          <p className="mb-8 mx-auto max-w-2xl text-gray-700">
             Свяжитесь с нами для получения дополнительной информации о работах, ценах и возможности заказа персональных произведений.
           </p>
-          <Link href="/contact" className="btn bg-white text-accent hover:bg-white/90">
+          <Link href="/contact" className="btn bg-white text-gray-800 hover:bg-white/90">
             Связаться
           </Link>
         </div>

@@ -2,68 +2,73 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Artwork from '@/models/Artwork';
 
-interface Params {
-  params: {
-    id: string;
-  };
-}
-
-// GET /api/artworks/[id] - Получить произведение искусства по ID
-export async function GET(req: NextRequest, { params }: Params) {
+// GET /api/artworks/[id] - Получить работу по ID
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
     
-    const { id } = params;
-    
-    const artwork = await Artwork.findById(id);
+    const artwork = await Artwork.findById(params.id)
+      .populate('categories', 'name');
     
     if (!artwork) {
       return NextResponse.json(
-        { error: 'Произведение искусства не найдено' },
+        { error: 'Работа не найдена' },
         { status: 404 }
       );
     }
     
     return NextResponse.json(artwork);
   } catch (error) {
-    console.error('Ошибка при получении произведения искусства:', error);
+    console.error('Ошибка при получении работы:', error);
     return NextResponse.json(
-      { error: 'Ошибка при получении произведения искусства' },
+      { error: 'Ошибка при получении работы' },
       { status: 500 }
     );
   }
 }
 
-// PUT /api/artworks/[id] - Обновить произведение искусства
-export async function PUT(req: NextRequest, { params }: Params) {
+// PUT /api/artworks/[id] - Обновить работу
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
     
-    const { id } = params;
     const data = await req.json();
     
+    // Валидация обязательных полей
+    if (!data.title || !data.imageUrl) {
+      return NextResponse.json(
+        { error: 'Название и изображение обязательны' },
+        { status: 400 }
+      );
+    }
+
     const artwork = await Artwork.findByIdAndUpdate(
-      id,
+      params.id,
       data,
       { new: true, runValidators: true }
-    );
-    
+    ).populate('categories', 'name');
+
     if (!artwork) {
       return NextResponse.json(
-        { error: 'Произведение искусства не найдено' },
+        { error: 'Работа не найдена' },
         { status: 404 }
       );
     }
     
     return NextResponse.json(artwork);
   } catch (error: any) {
-    console.error('Ошибка при обновлении произведения искусства:', error);
+    console.error('Ошибка при обновлении работы:', error);
     
-    // Проверяем, является ли ошибка ошибкой валидации Mongoose
+    // Проверяем ошибки валидации
     if (error.name === 'ValidationError') {
       const validationErrors: Record<string, string> = {};
       
-      // Формируем объект с ошибками валидации
       for (const field in error.errors) {
         validationErrors[field] = error.errors[field].message;
       }
@@ -75,36 +80,34 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }
     
     return NextResponse.json(
-      { error: 'Ошибка при обновлении произведения искусства' },
+      { error: 'Ошибка при обновлении работы' },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/artworks/[id] - Удалить произведение искусства
-export async function DELETE(req: NextRequest, { params }: Params) {
+// DELETE /api/artworks/[id] - Удалить работу
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
     
-    const { id } = params;
-    
-    const artwork = await Artwork.findByIdAndDelete(id);
+    const artwork = await Artwork.findByIdAndDelete(params.id);
     
     if (!artwork) {
       return NextResponse.json(
-        { error: 'Произведение искусства не найдено' },
+        { error: 'Работа не найдена' },
         { status: 404 }
       );
     }
     
-    return NextResponse.json(
-      { message: 'Произведение искусства успешно удалено' },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Ошибка при удалении произведения искусства:', error);
+    console.error('Ошибка при удалении работы:', error);
     return NextResponse.json(
-      { error: 'Ошибка при удалении произведения искусства' },
+      { error: 'Ошибка при удалении работы' },
       { status: 500 }
     );
   }

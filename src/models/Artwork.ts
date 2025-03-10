@@ -19,35 +19,28 @@ const ArtworkSchema: Schema = new Schema(
   {
     title: {
       type: String,
-      required: [true, 'Пожалуйста, укажите название работы'],
       trim: true,
       maxlength: [100, 'Название не может быть длиннее 100 символов'],
     },
     description: {
       type: String,
-      required: [true, 'Пожалуйста, добавьте описание работы'],
       trim: true,
     },
     imageUrl: {
       type: String,
-      required: [true, 'Пожалуйста, добавьте изображение работы'],
     },
     categories: {
       type: [String],
-      required: [true, 'Пожалуйста, выберите хотя бы одну категорию'],
     },
     year: {
       type: Number,
-      required: [true, 'Пожалуйста, укажите год создания'],
     },
     technique: {
       type: String,
-      required: [true, 'Пожалуйста, укажите технику исполнения'],
       trim: true,
     },
     dimensions: {
       type: String,
-      required: [true, 'Пожалуйста, укажите размеры работы'],
       trim: true,
     },
     price: {

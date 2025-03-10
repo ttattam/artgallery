@@ -6,21 +6,24 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FiPlus, FiEdit, FiTrash2, FiEye, FiSearch, FiFilter, FiX } from 'react-icons/fi';
 
-interface Artwork {
-  _id: string;
-  title: string;
-  imageUrl: string;
-  categories: string[];
-  year: number;
-  technique: string;
-  isSold: boolean;
-  isFeatured: boolean;
-  createdAt: string;
-}
-
 interface Category {
   _id: string;
   name: string;
+}
+
+interface Artwork {
+  _id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  categories: Category[];
+  year: number;
+  technique: string;
+  dimensions: string;
+  price: string;
+  isSold: boolean;
+  isFeatured: boolean;
+  createdAt: string;
 }
 
 export default function AdminArtworksPage() {
@@ -330,11 +333,11 @@ export default function AdminArtworksPage() {
                       <td className="px-4 py-3">
                         <div className="font-medium">{artwork.title}</div>
                         <div className="text-sm text-muted-foreground md:hidden">
-                          {artwork.categories.map(cat => getCategoryName(cat)).join(', ')}
+                          {artwork.categories.map(cat => getCategoryName(cat._id)).join(', ')}
                         </div>
                       </td>
                       <td className="hidden px-4 py-3 text-sm text-muted-foreground md:table-cell">
-                        {artwork.categories.map(cat => getCategoryName(cat)).join(', ')}
+                        {artwork.categories.map(cat => getCategoryName(cat._id)).join(', ')}
                       </td>
                       <td className="hidden px-4 py-3 text-sm text-muted-foreground md:table-cell">
                         {artwork.year}
