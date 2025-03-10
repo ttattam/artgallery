@@ -26,20 +26,23 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      // Проверка тестовых учетных данных
-      if (formData.email === 'admin@example.com') {
-        // Имитация задержки аутентификации
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        
-        // Прямое перенаправление через window.location
-        window.location.href = '/admin/dashboard';
-        return;
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ошибка при входе');
       }
-      
-      throw new Error('Неверный email или пароль');
+
+      // При успешном входе
+      router.push('/admin/dashboard');
     } catch (err: any) {
       console.error('Ошибка при входе:', err);
-      setError(err.message || 'Неверный email или пароль');
+      setError(err.message || 'Неверный логин или пароль');
     } finally {
       setIsSubmitting(false);
     }
@@ -52,10 +55,7 @@ export default function AdminLoginPage() {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent">
             <FiLock size={24} />
           </div>
-          <h1 className="text-2xl font-bold">Вход в панель управления</h1>
-          <p className="text-center text-muted-foreground">
-            Введите свои учетные данные для доступа к панели управления
-          </p>
+          <h1 className="text-2xl font-bold">Вход для администратора</h1>
         </div>
         
         {error && (
@@ -64,25 +64,20 @@ export default function AdminLoginPage() {
           </div>
         )}
         
-        <form 
-          onSubmit={handleSubmit} 
-          method="POST"
-          className="space-y-4"
-          action="#"
-        >
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="mb-2 block text-sm font-medium">
-              Email
+              Логин
             </label>
             <input
-              type="email"
+              type="text"
               id="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               required
               className="input w-full"
-              placeholder="admin@example.com"
+              placeholder="123"
             />
           </div>
           
@@ -98,7 +93,7 @@ export default function AdminLoginPage() {
               onChange={handleChange}
               required
               className="input w-full"
-              placeholder="••••••••"
+              placeholder="456"
             />
           </div>
           
@@ -113,7 +108,7 @@ export default function AdminLoginPage() {
         
         <div className="mt-6 text-center text-sm text-muted-foreground">
           <Link href="/" className="text-accent hover:underline">
-            Вернуться на главную страницу
+            На главную
           </Link>
         </div>
       </div>
