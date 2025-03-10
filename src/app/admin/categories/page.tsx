@@ -1,36 +1,43 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiRefreshCw, FiPlusCircle } from 'react-icons/fi';
 
 interface Category {
   _id: string;
   name: string;
-  slug: string;
-  description: string;
+  description?: string;
+  createdAt: string;
 }
 
-export default function CategoriesPage() {
+export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [formData, setFormData] = useState({ 
-    name: '',
-    description: '' 
-  });
+  const [newCategory, setNewCategory] = useState({ name: '', description: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Загрузка категорий
   const fetchCategories = async () => {
     try {
+      setIsLoading(true);
+      
+      // Сначала пытаемся инициализировать категории
+      await fetch('/api/init');
+      
+      // Затем загружаем список категорий
       const response = await fetch('/api/categories');
-      if (!response.ok) throw new Error('Ошибка при загрузке категорий');
+      
+      if (!response.ok) {
+        throw new Error('Не удалось загрузить категории');
+      }
+      
       const data = await response.json();
       setCategories(data);
+      setError(null);
     } catch (err) {
-      setError('Не удалось загрузить категории');
-      console.error(err);
+      console.error('Ошибка при загрузке категорий:', err);
+      setError('Произошла ошибка при загрузке категорий');
     } finally {
       setIsLoading(false);
     }
@@ -40,52 +47,35 @@ export default function CategoriesPage() {
     fetchCategories();
   }, []);
 
-  // Открытие модального окна для создания/редактирования
-  const openModal = (category?: Category) => {
-    if (category) {
-      setEditingCategory(category);
-      setFormData({ 
-        name: category.name,
-        description: category.description || ''
-      });
-    } else {
-      setEditingCategory(null);
-      setFormData({ name: '', description: '' });
-    }
-    setIsModalOpen(true);
-  };
-
-  // Закрытие модального окна
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingCategory(null);
-    setFormData({ name: '', description: '' });
-  };
-
-  // Обработка отправки формы
+  // Добавление новой категории
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!newCategory.name.trim()) {
+      return;
+    }
+    
     try {
-      const url = '/api/categories';
-      const method = editingCategory ? 'PUT' : 'POST';
-      const body = editingCategory 
-        ? { ...formData, _id: editingCategory._id }
-        : formData;
-
-      const response = await fetch(url, {
-        method,
+      setIsSubmitting(true);
+      const response = await fetch('/api/categories', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(newCategory),
       });
-
-      if (!response.ok) throw new Error('Ошибка при сохранении категории');
-
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Ошибка при создании категории');
+      }
+      
+      // Очищаем форму и обновляем список категорий
+      setNewCategory({ name: '', description: '' });
       await fetchCategories();
-      closeModal();
-    } catch (err) {
-      setError('Не удалось сохранить категорию');
-      console.error(err);
+    } catch (err: any) {
+      console.error('Ошибка при создании категории:', err);
+      setError(err.message || 'Произошла ошибка при создании категории');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -94,144 +84,194 @@ export default function CategoriesPage() {
     if (!window.confirm('Вы уверены, что хотите удалить эту категорию?')) {
       return;
     }
-
+    
     try {
-      const response = await fetch(`/api/categories?id=${id}`, {
+      const response = await fetch(`/api/categories/${id}`, {
         method: 'DELETE',
       });
-
-      if (!response.ok) throw new Error('Ошибка при удалении категории');
-
+      
+      if (!response.ok) {
+        throw new Error('Не удалось удалить категорию');
+      }
+      
+      // Обновляем список категорий
       await fetchCategories();
     } catch (err) {
-      setError('Не удалось удалить категорию');
-      console.error(err);
+      console.error('Ошибка при удалении категории:', err);
+      setError('Произошла ошибка при удалении категории');
     }
   };
 
-  if (isLoading) {
-    return <div className="p-8">Загрузка...</div>;
-  }
+  // Сброс категорий
+  const handleReset = async () => {
+    if (!window.confirm('Вы уверены, что хотите сбросить все категории? Это действие нельзя отменить.')) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      // Сначала удаляем все категории
+      const resetResponse = await fetch('/api/categories/reset', {
+        method: 'POST'
+      });
+      
+      if (!resetResponse.ok) {
+        throw new Error('Не удалось сбросить категории');
+      }
+      
+      // Затем заново инициализируем базовые категории
+      await fetch('/api/init');
+      
+      // И обновляем список
+      await fetchCategories();
+      
+    } catch (err) {
+      console.error('Ошибка при сбросе категорий:', err);
+      setError('Произошла ошибка при сбросе категорий');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Добавление новых категорий
+  const handleAddNewCategories = async () => {
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch('/api/categories/add-new', {
+        method: 'POST'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Не удалось добавить новые категории');
+      }
+      
+      // Обновляем список категорий
+      await fetchCategories();
+      
+    } catch (err) {
+      console.error('Ошибка при добавлении новых категорий:', err);
+      setError('Произошла ошибка при добавлении новых категорий');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Категории</h1>
-        <button
-          onClick={() => openModal()}
-          className="btn btn-primary flex items-center"
-        >
-          <FiPlus className="mr-2" />
-          Добавить категорию
-        </button>
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Управление категориями</h1>
+        <div className="flex gap-4">
+          <button
+            onClick={handleAddNewCategories}
+            className="btn btn-primary inline-flex items-center"
+            disabled={isLoading}
+          >
+            <FiPlusCircle className="mr-2" />
+            Добавить новые категории
+          </button>
+          <button
+            onClick={handleReset}
+            className="btn btn-secondary inline-flex items-center"
+            disabled={isLoading}
+          >
+            <FiRefreshCw className="mr-2" />
+            Сбросить категории
+          </button>
+        </div>
       </div>
-
+      
       {error && (
-        <div className="rounded-lg bg-red-100 p-4 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+        <div className="mb-6 rounded-lg bg-red-100 p-4 text-red-800 dark:bg-red-900/30 dark:text-red-400">
           {error}
         </div>
       )}
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {categories.map((category) => (
-          <div
-            key={category._id}
-            className="rounded-lg border border-border bg-card p-4"
-          >
-            <div className="mb-2 flex items-start justify-between">
-              <div>
-                <h3 className="font-medium">{category.name}</h3>
-                <p className="text-sm text-muted-foreground">{category.slug}</p>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => openModal(category)}
-                  className="rounded-md p-2 text-muted-foreground hover:bg-accent/10 hover:text-foreground"
-                  title="Редактировать"
-                >
-                  <FiEdit2 size={16} />
-                </button>
-                <button
-                  onClick={() => handleDelete(category._id)}
-                  className="rounded-md p-2 text-muted-foreground hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30"
-                  title="Удалить"
-                >
-                  <FiTrash2 size={16} />
-                </button>
-              </div>
-            </div>
-            {category.description && (
-              <p className="text-sm text-muted-foreground">
-                {category.description}
-              </p>
-            )}
+      
+      {/* Форма добавления категории */}
+      <form onSubmit={handleSubmit} className="mb-8">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label htmlFor="name" className="mb-2 block text-sm font-medium">
+              Название категории
+            </label>
+            <input
+              type="text"
+              id="name"
+              value={newCategory.name}
+              onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+              className="input w-full"
+              placeholder="Введите название категории"
+              required
+            />
           </div>
-        ))}
-        {categories.length === 0 && (
-          <div className="col-span-full rounded-lg border border-border p-8 text-center text-muted-foreground">
-            Нет категорий
+          
+          <div>
+            <label htmlFor="description" className="mb-2 block text-sm font-medium">
+              Описание (необязательно)
+            </label>
+            <input
+              type="text"
+              id="description"
+              value={newCategory.description}
+              onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+              className="input w-full"
+              placeholder="Введите описание категории"
+            />
           </div>
-        )}
-      </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-background p-6">
-            <h2 className="mb-4 text-xl font-semibold">
-              {editingCategory ? 'Редактировать категорию' : 'Новая категория'}
-            </h2>
-            
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="mb-2 block text-sm font-medium">
-                    Название
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="input w-full"
-                    placeholder="Введите название категории"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="description" className="mb-2 block text-sm font-medium">
-                    Описание
-                  </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    className="input w-full"
-                    placeholder="Введите описание категории"
-                    rows={3}
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-6 flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/10"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                >
-                  {editingCategory ? 'Сохранить' : 'Создать'}
-                </button>
-              </div>
-            </form>
-          </div>
+        </div>
+        
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="btn btn-primary mt-4 inline-flex items-center"
+        >
+          <FiPlus className="mr-2" />
+          {isSubmitting ? 'Добавление...' : 'Добавить категорию'}
+        </button>
+      </form>
+      
+      {/* Список категорий */}
+      {isLoading ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-accent"></div>
+        </div>
+      ) : categories.length === 0 ? (
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <p className="text-muted-foreground">Нет доступных категорий</p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-lg border border-border">
+          <table className="w-full">
+            <thead className="bg-card">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Название</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Описание</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Действия</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {categories.map((category) => (
+                <tr key={category._id} className="bg-background hover:bg-card/50">
+                  <td className="px-4 py-3">
+                    <div className="font-medium">{category.name}</div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                    {category.description || '—'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => handleDelete(category._id)}
+                      className="rounded-md p-2 text-muted-foreground hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+                      title="Удалить"
+                    >
+                      <FiTrash2 size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

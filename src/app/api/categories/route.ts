@@ -64,9 +64,7 @@ let categories = [
 export async function GET() {
   try {
     await connectToDatabase();
-    
-    const categories = await Category.find().sort({ order: 1, name: 1 });
-    
+    const categories = await Category.find().sort({ name: 1 });
     return NextResponse.json(categories);
   } catch (error) {
     console.error('Ошибка при получении категорий:', error);
@@ -77,54 +75,28 @@ export async function GET() {
   }
 }
 
-// POST /api/categories - Добавить новую категорию
-export async function POST(req: NextRequest) {
+// POST /api/categories - Создать новую категорию
+export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
+    const data = await request.json();
     
-    const data = await req.json();
-    
+    // Проверяем обязательные поля
     if (!data.name) {
       return NextResponse.json(
         { error: 'Название категории обязательно' },
         { status: 400 }
       );
     }
-
-    // Создаем slug из названия
-    const slug = data.name
-      .toLowerCase()
-      .replace(/[^а-яa-z0-9\s]/g, '')
-      .replace(/\s+/g, '-');
-
-    const newCategory = {
-      _id: Date.now().toString(),
-      name: data.name,
-      slug,
-    };
-
-    await Category.create(newCategory);
-
-    return NextResponse.json(newCategory);
+    
+    const category = new Category(data);
+    await category.save();
+    
+    return NextResponse.json(category, { status: 201 });
   } catch (error: any) {
     console.error('Ошибка при создании категории:', error);
     
-    // Проверяем, является ли ошибка ошибкой валидации Mongoose
-    if (error.name === 'ValidationError') {
-      const validationErrors: Record<string, string> = {};
-      
-      // Формируем объект с ошибками валидации
-      for (const field in error.errors) {
-        validationErrors[field] = error.errors[field].message;
-      }
-      
-      return NextResponse.json(
-        { error: 'Ошибка валидации', validationErrors },
-        { status: 400 }
-      );
-    }
-    
-    // Проверяем, является ли ошибка ошибкой дублирования (уникальное поле)
+    // Проверяем ошибку дубликата
     if (error.code === 11000) {
       return NextResponse.json(
         { error: 'Категория с таким названием уже существует' },
@@ -134,6 +106,37 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json(
       { error: 'Ошибка при создании категории' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/categories/[id] - Удалить категорию
+export async function DELETE(request: NextRequest) {
+  try {
+    await connectToDatabase();
+    
+    const id = request.url.split('/').pop();
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID категории не указан' },
+        { status: 400 }
+      );
+    }
+    
+    const category = await Category.findByIdAndDelete(id);
+    if (!category) {
+      return NextResponse.json(
+        { error: 'Категория не найдена' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({ message: 'Категория успешно удалена' });
+  } catch (error) {
+    console.error('Ошибка при удалении категории:', error);
+    return NextResponse.json(
+      { error: 'Ошибка при удалении категории' },
       { status: 500 }
     );
   }
@@ -176,39 +179,6 @@ export async function PUT(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: 'Ошибка при обновлении категории' },
-      { status: 500 }
-    );
-  }
-}
-
-// Удаление категории
-export async function DELETE(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'ID категории обязателен' },
-        { status: 400 }
-      );
-    }
-
-    const index = categories.findIndex(cat => cat._id === id);
-    
-    if (index === -1) {
-      return NextResponse.json(
-        { error: 'Категория не найдена' },
-        { status: 404 }
-      );
-    }
-
-    categories = categories.filter(cat => cat._id !== id);
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Ошибка при удалении категории' },
       { status: 500 }
     );
   }

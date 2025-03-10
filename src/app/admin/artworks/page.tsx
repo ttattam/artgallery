@@ -46,77 +46,21 @@ export default function AdminArtworksPage() {
       try {
         setIsLoading(true);
         
-        // В реальном проекте здесь будет запрос к API с параметрами фильтрации
-        // const queryParams = new URLSearchParams();
-        // if (searchTerm) queryParams.append('search', searchTerm);
-        // if (selectedCategory) queryParams.append('category', selectedCategory);
-        // if (showFeatured) queryParams.append('featured', 'true');
-        // const response = await fetch(`/api/artworks?${queryParams.toString()}`);
+        // Формируем URL с параметрами фильтрации
+        const queryParams = new URLSearchParams();
+        if (searchTerm) queryParams.append('search', searchTerm);
+        if (selectedCategory) queryParams.append('category', selectedCategory);
+        if (showFeatured) queryParams.append('featured', 'true');
         
-        // Имитация задержки загрузки данных
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Запрос к API
+        const response = await fetch(`/api/artworks?${queryParams.toString()}`);
         
-        // Имитация данных произведений искусства
-        const mockArtworks = [
-          {
-            _id: '1',
-            title: 'Абстрактная композиция №1',
-            imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-            categories: ['1'],
-            year: 2023,
-            technique: 'Масло, холст',
-            isSold: false,
-            isFeatured: true,
-            createdAt: '2023-01-15T12:00:00Z',
-          },
-          {
-            _id: '2',
-            title: 'Городской пейзаж',
-            imageUrl: 'https://images.unsplash.com/photo-1549887534-1541e9326642?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-            categories: ['2'],
-            year: 2022,
-            technique: 'Акварель, бумага',
-            isSold: true,
-            isFeatured: false,
-            createdAt: '2022-11-20T10:30:00Z',
-          },
-          {
-            _id: '3',
-            title: 'Портрет незнакомки',
-            imageUrl: 'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-            categories: ['3'],
-            year: 2023,
-            technique: 'Масло, холст',
-            isSold: false,
-            isFeatured: true,
-            createdAt: '2023-02-05T14:15:00Z',
-          },
-        ];
-        
-        // Фильтрация данных на стороне клиента (в реальном проекте это делается на сервере)
-        let filteredArtworks = mockArtworks;
-        
-        if (searchTerm) {
-          filteredArtworks = filteredArtworks.filter(artwork => 
-            artwork.title.toLowerCase().includes(searchTerm.toLowerCase())
-          );
+        if (!response.ok) {
+          throw new Error('Не удалось загрузить произведения искусства');
         }
         
-        if (selectedCategory) {
-          filteredArtworks = filteredArtworks.filter(artwork => 
-            artwork.categories.includes(selectedCategory)
-          );
-        }
-        
-        if (!showSold) {
-          filteredArtworks = filteredArtworks.filter(artwork => !artwork.isSold);
-        }
-        
-        if (showFeatured) {
-          filteredArtworks = filteredArtworks.filter(artwork => artwork.isFeatured);
-        }
-        
-        setArtworks(filteredArtworks);
+        const data = await response.json();
+        setArtworks(data);
         setError(null);
       } catch (err) {
         console.error('Ошибка при загрузке произведений искусства:', err);
@@ -297,12 +241,14 @@ export default function AdminArtworksPage() {
           ) : artworks.length === 0 ? (
             <div className="rounded-lg border border-border bg-card p-8 text-center">
               <p className="text-muted-foreground">Произведения искусства не найдены</p>
-              <button
-                onClick={resetFilters}
-                className="mt-4 rounded-md bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
-              >
-                Сбросить фильтры
-              </button>
+              {(searchTerm || selectedCategory || showFeatured) && (
+                <button
+                  onClick={resetFilters}
+                  className="mt-4 rounded-md bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
+                >
+                  Сбросить фильтры
+                </button>
+              )}
             </div>
           ) : (
             <div className="overflow-hidden rounded-lg border border-border">

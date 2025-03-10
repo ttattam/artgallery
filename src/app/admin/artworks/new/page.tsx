@@ -145,7 +145,6 @@ export default function NewArtworkPage() {
     setError(undefined);
 
     try {
-      // Отправляем данные на сервер
       const response = await fetch('/api/artworks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -156,9 +155,10 @@ export default function NewArtworkPage() {
         const data = await response.json();
         throw new Error(data.error || 'Произошла ошибка при создании произведения');
       }
-      
-      // Перенаправление на страницу со списком произведений
+
+      // После успешного создания перенаправляем на страницу со списком
       router.push('/admin/artworks');
+      
     } catch (err: any) {
       console.error('Ошибка при создании произведения:', err);
       setError(err.message || 'Произошла ошибка при создании произведения');

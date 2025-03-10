@@ -35,11 +35,33 @@ let artworks = [
 ];
 
 // GET /api/artworks - Получить все работы
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
     
-    const artworks = await Artwork.find()
+    // Получаем параметры запроса
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search');
+    const category = searchParams.get('category');
+    const featured = searchParams.get('featured');
+    
+    // Формируем условия фильтрации
+    const query: any = {};
+    
+    if (search) {
+      query.title = { $regex: search, $options: 'i' };
+    }
+    
+    if (category) {
+      query.categories = category;
+    }
+    
+    if (featured === 'true') {
+      query.isFeatured = true;
+    }
+    
+    // Получаем отфильтрованные работы
+    const artworks = await Artwork.find(query)
       .sort({ createdAt: -1 })
       .populate('categories', 'name');
     
@@ -54,41 +76,17 @@ export async function GET() {
 }
 
 // POST /api/artworks - Создать новую работу
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     
-    const data = await req.json();
-    
-    // Валидация обязательных полей
-    if (!data.title || !data.imageUrl) {
-      return NextResponse.json(
-        { error: 'Название и изображение обязательны' },
-        { status: 400 }
-      );
-    }
-
-    // Создаем новую работу
-    const artwork = await Artwork.create(data);
+    const data = await request.json();
+    const artwork = new Artwork(data);
+    await artwork.save();
     
     return NextResponse.json(artwork, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Ошибка при создании работы:', error);
-    
-    // Проверяем ошибки валидации
-    if (error.name === 'ValidationError') {
-      const validationErrors: Record<string, string> = {};
-      
-      for (const field in error.errors) {
-        validationErrors[field] = error.errors[field].message;
-      }
-      
-      return NextResponse.json(
-        { error: 'Ошибка валидации', validationErrors },
-        { status: 400 }
-      );
-    }
-    
     return NextResponse.json(
       { error: 'Ошибка при создании работы' },
       { status: 500 }
