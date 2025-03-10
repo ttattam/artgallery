@@ -31,10 +31,10 @@ export default async function Home() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/50 to-background/90" />
         <div className="container relative z-10 flex h-full flex-col items-center justify-center text-center">
-          <h1 className="mb-6 max-w-4xl text-4xl font-bold tracking-tight text-black sm:text-5xl md:text-6xl">
+          <h1 className="mb-6 max-w-4xl text-4xl font-bold tracking-tight text-black dark:text-white sm:text-5xl md:text-6xl">
             Уникальные произведения современного искусства
           </h1>
-          <p className="mb-8 max-w-2xl text-lg text-black">
+          <p className="mb-8 max-w-2xl text-lg text-black dark:text-white">
             Откройте для себя коллекцию работ талантливого художника, отражающих глубину эмоций и красоту окружающего мира
           </p>
           <div className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
@@ -123,16 +123,49 @@ export default async function Home() {
       {/* Categories Section */}
       <section className="section bg-card">
         <div className="container">
-          <h2 className="mb-12 text-center text-3xl font-bold tracking-tight">Категории работ</h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {['Живопись', 'Графика', 'Скульптура', 'Цифровое искусство'].map((category) => (
+          <h2 className="mb-12 text-center text-3xl font-bold tracking-tight text-foreground dark:text-white">Категории работ</h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                title: 'Абстракция',
+                description: 'Беспредметное искусство, основанное на цвете и форме'
+              },
+              {
+                title: 'Акварель',
+                description: 'Картины, написанные акварельными красками'
+              },
+              {
+                title: 'Брендинг',
+                description: 'Разработка логотипов, фирменного стиля и брендбуков'
+              },
+              {
+                title: 'Графика',
+                description: 'Рисунки карандашом, тушью, пастелью'
+              },
+              {
+                title: 'Граффити - Интерьерный дизайн',
+                description: 'Художественное оформление внутренних помещений в стиле граффити'
+              },
+              {
+                title: 'Граффити - Оформление фасадов',
+                description: 'Художественное оформление внешних стен зданий и сооружений'
+              },
+              {
+                title: 'Живопись',
+                description: 'Картины, написанные маслом, акрилом и другими красками'
+              },
+              {
+                title: 'Инсталляция',
+                description: 'Пространственные композиции из различных материалов'
+              }
+            ].map((category) => (
               <Link
-                key={category}
-                href={`/categories/${category.toLowerCase()}`}
-                className="group flex flex-col items-center rounded-lg border border-border bg-background p-6 text-center transition-all hover:shadow-md"
+                key={category.title}
+                href={`/categories/${category.title.toLowerCase()}`}
+                className="group flex flex-col items-center rounded-lg border border-border bg-background p-6 text-center transition-all hover:shadow-md hover:bg-accent/5 dark:hover:bg-accent/20"
               >
-                <h3 className="mb-2 text-xl font-medium text-gray-800">{category}</h3>
-                <p className="text-sm text-gray-700">Исследуйте коллекцию</p>
+                <h3 className="mb-3 text-xl font-medium text-foreground dark:text-white">{category.title}</h3>
+                <p className="text-sm text-muted-foreground dark:text-gray-300">{category.description}</p>
               </Link>
             ))}
           </div>
@@ -142,11 +175,11 @@ export default async function Home() {
       {/* Contact CTA */}
       <section className="section bg-accent text-white">
         <div className="container text-center">
-          <h2 className="mb-6 text-3xl font-bold tracking-tight text-gray-800">Заинтересованы в приобретении?</h2>
-          <p className="mb-8 mx-auto max-w-2xl text-gray-700">
+          <h2 className="mb-6 text-3xl font-bold tracking-tight text-white">Заинтересованы в приобретении?</h2>
+          <p className="mb-8 mx-auto max-w-2xl text-white/90">
             Свяжитесь с нами для получения дополнительной информации о работах, ценах и возможности заказа персональных произведений.
           </p>
-          <Link href="/contact" className="btn bg-white text-gray-800 hover:bg-white/90">
+          <Link href="/contact" className="btn bg-white text-accent hover:bg-white/90">
             Связаться
           </Link>
         </div>

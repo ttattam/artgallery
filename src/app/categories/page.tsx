@@ -65,14 +65,10 @@ export default function CategoriesPage() {
               href={`/artworks?category=${category._id}`}
               className="group flex flex-col rounded-lg border border-border bg-card p-6 transition-all hover:shadow-md"
             >
-              <h2 className="mb-2 text-2xl font-medium">{category.name}</h2>
+              <h2 className="mb-2 text-2xl font-medium text-gray-800">{category.name}</h2>
               {category.description && (
-                <p className="mb-4 flex-grow text-muted-foreground">{category.description}</p>
+                <p className="mb-4 flex-grow text-gray-600">{category.description}</p>
               )}
-              <div className="mt-auto flex items-center text-accent">
-                Смотреть работы
-                <FiArrowRight className="ml-2 transition-transform group-hover:translate-x-1" />
-              </div>
             </Link>
           ))}
         </div>

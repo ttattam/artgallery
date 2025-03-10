@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiMenu, FiX } from 'react-icons/fi';
+import { ThemeToggle } from './ThemeToggle';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -25,7 +26,7 @@ const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2 no-underline">
-          <span className="text-xl font-semibold tracking-tight">Art Gallery</span>
+          <span className="text-xl font-bold tracking-tight text-foreground dark:text-white">РОСКШ</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -41,16 +42,20 @@ const Header = () => {
               {item.name}
             </Link>
           ))}
+          <ThemeToggle />
         </nav>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="inline-flex items-center justify-center rounded-md p-2 text-foreground md:hidden"
-          onClick={toggleMenu}
-          aria-label="Toggle menu"
-        >
-          {isMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
-        </button>
+        <div className="flex items-center md:hidden">
+          <ThemeToggle />
+          {/* Mobile Menu Button */}
+          <button
+            className="inline-flex items-center justify-center rounded-md p-2 text-foreground"
+            onClick={toggleMenu}
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Navigation */}
