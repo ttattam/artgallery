@@ -38,8 +38,8 @@ export default async function Home() {
             Откройте для себя коллекцию работ талантливого художника, отражающих глубину эмоций и красоту окружающего мира
           </p>
           <div className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
-            <Link href="/artworks" className="btn btn-primary">
-              Смотреть работы
+            <Link href="/artworks" className="btn bg-gray-700 text-white hover:bg-gray-800 dark:bg-gray-300 dark:text-gray-900 dark:hover:bg-gray-400 text-lg px-8 py-4">
+              Оставить заявку
             </Link>
             <Link href="/about" className="btn btn-secondary">
               О художнике
